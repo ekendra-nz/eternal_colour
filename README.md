@@ -3,7 +3,7 @@
 - <https://www.eternaltattooink.com/pages/color-maps>
 - <https://artistpigments.org/>
 
-# ------------------------------------------------------------
+# -----------------------------------------------------
 
 # create-svelte
 
