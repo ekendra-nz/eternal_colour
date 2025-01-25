@@ -1,7 +1,7 @@
 # Eternal Colour Wheel Resources
 
 - <https://www.eternaltattooink.com/pages/color-maps>
-- <https://artistpigments.org/>
+- <https://artistpigments.org/visualize_colors>
 
 # -----------------------------------------------------
 
