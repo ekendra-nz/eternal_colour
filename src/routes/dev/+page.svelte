@@ -3,7 +3,7 @@
 	import { writable } from 'svelte/store';
 
 	let canvas: HTMLCanvasElement | null = null;
-	const luminosity = writable(0); // Luminosity (-1 to 1)
+	const luminosity = writable(0); // Luminosity (0 to 1)
 	let size = 100; // Canvas size
 	let percentOfWindow = 0.7; // Scale relative to window
 	let label = ''; // Display label
@@ -51,6 +51,22 @@
 				const extendedRadius = radius + 1; // Slightly extend radius to eliminate white edge
 				const imageData = ctx.createImageData(size, size);
 
+				// Calculate skin tone at the current slider value
+				const adjustedLum = Math.max(0, lum - 0.05) / 0.95; // Skip the first 5% for "No Overlay"
+				const toneIndex = Math.floor(adjustedLum * (skinTones.length - 2)) + 1;
+				const nextToneIndex = Math.min(toneIndex + 1, skinTones.length - 1);
+				const factor = (adjustedLum * (skinTones.length - 2)) % 1;
+
+				const skinTone = interpolateColor(skinTones[toneIndex], skinTones[nextToneIndex], factor);
+
+				// Update label with the current skin tone and RGB value
+				if (lum <= 0.05) {
+					label = `${skinTones[0].label}`;
+				} else {
+					const currentTone = skinTones[toneIndex];
+					label = `${currentTone.label} - RGB(${skinTone.r}, ${skinTone.g}, ${skinTone.b})`;
+				}
+
 				// Loop through pixels
 				for (let y = -radius; y < radius; y++) {
 					for (let x = -radius; x < radius; x++) {
@@ -68,16 +84,6 @@
 							let [r, g, b] = hsvToRgb(hue, saturation, value);
 
 							// Interpolate skin tone based on luminosity (adjusted range)
-							const toneIndex = Math.floor(((lum + 1) * (skinTones.length - 1)) / 2);
-							const nextToneIndex = Math.min(toneIndex + 1, skinTones.length - 1);
-							const factor = ((lum + 1) * (skinTones.length - 1)) / 2 - toneIndex;
-
-							const skinTone = interpolateColor(
-								skinTones[toneIndex],
-								skinTones[nextToneIndex],
-								factor
-							);
-
 							r = Math.round(r * (1 - lum) + skinTone.r * lum);
 							g = Math.round(g * (1 - lum) + skinTone.g * lum);
 							b = Math.round(b * (1 - lum) + skinTone.b * lum);
@@ -140,18 +146,23 @@
 
 <div class="m-6 flex flex-col items-center">
 	<p class="text-lg font-medium mb-2">{label}</p>
-	<!-- Color bar with vertical lines -->
-	<div class="relative w-full h-6 mb-6">
+	<!-- Color bar with labels -->
+	<div class="relative w-full h-8 mb-2">
 		<div
 			class="absolute inset-0"
 			style="background: linear-gradient(to right, rgba(255, 255, 255, 0) 5%, rgb(223, 170, 129), rgb(173, 115, 91), rgb(139, 87, 63), rgb(105, 63, 47), rgb(80, 47, 34));"
 		></div>
-		<!-- Vertical lines -->
-		<div class="absolute border-r border-black h-full" style="left: 5%;"></div>
-		<div class="absolute border-r border-black h-full" style="left: 25%;"></div>
-		<div class="absolute border-r border-black h-full" style="left: 45%;"></div>
-		<div class="absolute border-r border-black h-full" style="left: 65%;"></div>
-		<div class="absolute border-r border-black h-full" style="left: 85%;"></div>
+		<div
+			class="absolute w-full flex justify-between text-xs text-white font-bold"
+			style="top: 50%; transform: translateY(-50%);"
+		>
+			<span style="left: 2%">No</span>
+			<span style="left: 15%">F I</span>
+			<span style="left: 35%">F II</span>
+			<span style="left: 55%">F III</span>
+			<span style="left: 75%">F IV</span>
+			<span style="left: 95%">F V</span>
+		</div>
 	</div>
 	<input
 		id="luminositySlider"
