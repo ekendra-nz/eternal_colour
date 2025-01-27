@@ -3,7 +3,7 @@
 	import { writable } from 'svelte/store';
 
 	let canvas: HTMLCanvasElement | null = null;
-	const luminosity = writable(0); // Luminosity (0 to 1)
+	const luminosity = writable(0); // Luminosity (-1 to 1)
 	let size = 100; // Canvas size
 	let percentOfWindow = 0.7; // Scale relative to window
 	let label = ''; // Display label
@@ -11,11 +11,11 @@
 	// Fitzpatrick skin tones (RGB values)
 	const skinTones = [
 		{ r: 255, g: 224, b: 189, label: 'No Overlay (Pure Wheel)' }, // No overlay (pure color wheel)
-		{ r: 223, g: 170, b: 129, label: 'F I (Light Skin)' }, // Fitzpatrick I (Light Skin)
-		{ r: 173, g: 115, b: 91, label: 'F II (Medium Light Skin)' }, // Fitzpatrick II (Medium Light Skin)
-		{ r: 139, g: 87, b: 63, label: 'F III (Medium Skin)' }, // Fitzpatrick III (Medium Skin)
-		{ r: 105, g: 63, b: 47, label: 'F IV (Tan Skin)' }, // Fitzpatrick IV (Tan Skin)
-		{ r: 80, g: 47, b: 34, label: 'F V (Dark Skin)' } // Fitzpatrick V (Dark Skin)
+		{ r: 223, g: 170, b: 129, label: 'Fitzpatrick I' }, // Fitzpatrick I
+		{ r: 173, g: 115, b: 91, label: 'Fitzpatrick II' }, // Fitzpatrick II
+		{ r: 139, g: 87, b: 63, label: 'Fitzpatrick III' }, // Fitzpatrick III
+		{ r: 105, g: 63, b: 47, label: 'Fitzpatrick IV' }, // Fitzpatrick IV
+		{ r: 80, g: 47, b: 34, label: 'Fitzpatrick V' } // Fitzpatrick V
 	];
 
 	// Function to interpolate between two colors
@@ -51,13 +51,6 @@
 				const extendedRadius = radius + 1; // Slightly extend radius to eliminate white edge
 				const imageData = ctx.createImageData(size, size);
 
-				// Update label with skin tone description
-				const sectionIndex = Math.min(
-					Math.floor(lum * (skinTones.length - 1)),
-					skinTones.length - 1
-				);
-				label = `${skinTones[sectionIndex].label}`;
-
 				// Loop through pixels
 				for (let y = -radius; y < radius; y++) {
 					for (let x = -radius; x < radius; x++) {
@@ -74,13 +67,10 @@
 
 							let [r, g, b] = hsvToRgb(hue, saturation, value);
 
-							// Interpolate skin tone based on luminosity
-							const toneIndex = Math.min(
-								Math.floor(lum * (skinTones.length - 1)),
-								skinTones.length - 1
-							);
+							// Interpolate skin tone based on luminosity (adjusted range)
+							const toneIndex = Math.floor(((lum + 1) * (skinTones.length - 1)) / 2);
 							const nextToneIndex = Math.min(toneIndex + 1, skinTones.length - 1);
-							const factor = lum * (skinTones.length - 1) - toneIndex;
+							const factor = ((lum + 1) * (skinTones.length - 1)) / 2 - toneIndex;
 
 							const skinTone = interpolateColor(
 								skinTones[toneIndex],
@@ -150,28 +140,19 @@
 
 <div class="m-6 flex flex-col items-center">
 	<p class="text-lg font-medium mb-2">{label}</p>
-
-	<!-- Skin Tone Color Bar with Labels -->
-	<div class="w-full mt-4 h-8 flex relative">
-		<div style="width: 5%; background-color: #fff;">
-			<p
-				class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black text-xs"
-			>
-				No Overlay
-			</p>
-		</div>
-		{#each skinTones.slice(1) as tone, i (tone.label)}
-			<div class="flex-1 relative" style="background-color: rgb({tone.r}, {tone.g}, {tone.b})">
-				<p
-					class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xs font-bold"
-				>
-					{tone.label}
-				</p>
-			</div>
-		{/each}
+	<!-- Color bar with vertical lines -->
+	<div class="relative w-full h-6 mb-6">
+		<div
+			class="absolute inset-0"
+			style="background: linear-gradient(to right, rgba(255, 255, 255, 0) 5%, rgb(223, 170, 129), rgb(173, 115, 91), rgb(139, 87, 63), rgb(105, 63, 47), rgb(80, 47, 34));"
+		></div>
+		<!-- Vertical lines -->
+		<div class="absolute border-r border-black h-full" style="left: 5%;"></div>
+		<div class="absolute border-r border-black h-full" style="left: 25%;"></div>
+		<div class="absolute border-r border-black h-full" style="left: 45%;"></div>
+		<div class="absolute border-r border-black h-full" style="left: 65%;"></div>
+		<div class="absolute border-r border-black h-full" style="left: 85%;"></div>
 	</div>
-
-	<!-- Slider -->
 	<input
 		id="luminositySlider"
 		type="range"
@@ -181,8 +162,6 @@
 		bind:value={$luminosity}
 		class="w-full mb-6"
 	/>
-
-	<!-- Canvas for color wheel -->
 	<canvas bind:this={canvas}></canvas>
 </div>
 
@@ -190,16 +169,5 @@
 	canvas {
 		border: 10px solid black;
 		border-radius: 50%;
-	}
-	.slider-container {
-		width: 100%;
-		display: flex;
-		justify-content: space-between;
-		padding: 0 20px;
-	}
-	.slider-label {
-		display: flex;
-		justify-content: space-between;
-		width: 100%;
 	}
 </style>
