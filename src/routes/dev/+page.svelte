@@ -1,9 +1,9 @@
-<!-- <script lang="ts">
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 
 	let canvas: HTMLCanvasElement | null = null;
-	const luminosity = writable(0); // Luminosity (-1 to 1)
+	const luminosity = writable(0); // Luminosity (0 to 1)
 	let size = 100; // Canvas size
 	let percentOfWindow = 0.7; // Scale relative to window
 	let label = ''; // Display label
@@ -11,11 +11,11 @@
 	// Fitzpatrick skin tones (RGB values)
 	const skinTones = [
 		{ r: 255, g: 224, b: 189, label: 'No Overlay (Pure Wheel)' }, // No overlay (pure color wheel)
-		{ r: 223, g: 170, b: 129, label: 'Light Skin' }, // Light Skin
-		{ r: 173, g: 115, b: 91, label: 'Medium Light Skin' }, // Medium Light Skin
-		{ r: 139, g: 87, b: 63, label: 'Medium Skin' }, // Medium Skin
-		{ r: 105, g: 63, b: 47, label: 'Tan Skin' }, // Tan Skin
-		{ r: 80, g: 47, b: 34, label: 'Dark Skin' } // Dark Skin
+		{ r: 223, g: 170, b: 129, label: 'F I (Light Skin)' }, // Fitzpatrick I (Light Skin)
+		{ r: 173, g: 115, b: 91, label: 'F II (Medium Light Skin)' }, // Fitzpatrick II (Medium Light Skin)
+		{ r: 139, g: 87, b: 63, label: 'F III (Medium Skin)' }, // Fitzpatrick III (Medium Skin)
+		{ r: 105, g: 63, b: 47, label: 'F IV (Tan Skin)' }, // Fitzpatrick IV (Tan Skin)
+		{ r: 80, g: 47, b: 34, label: 'F V (Dark Skin)' } // Fitzpatrick V (Dark Skin)
 	];
 
 	// Function to interpolate between two colors
@@ -51,9 +51,12 @@
 				const extendedRadius = radius + 1; // Slightly extend radius to eliminate white edge
 				const imageData = ctx.createImageData(size, size);
 
-				// Update label with rounded values
-				const sectionIndex = Math.floor(((lum + 1) * (skinTones.length - 1)) / 2);
-				label = `${skinTones[sectionIndex].label} - ${Math.round((lum + 1) * 100)}% Skin Tone Influence`;
+				// Update label with skin tone description
+				const sectionIndex = Math.min(
+					Math.floor(lum * (skinTones.length - 1)),
+					skinTones.length - 1
+				);
+				label = `${skinTones[sectionIndex].label}`;
 
 				// Loop through pixels
 				for (let y = -radius; y < radius; y++) {
@@ -71,27 +74,23 @@
 
 							let [r, g, b] = hsvToRgb(hue, saturation, value);
 
-							// If luminosity is in the no-overlay section, use pure color wheel
-							if (lum === -1) {
-								r = Math.round(r);
-								g = Math.round(g);
-								b = Math.round(b);
-							} else {
-								// Interpolate skin tone based on luminosity
-								const toneIndex = Math.floor(((lum + 1) * (skinTones.length - 1)) / 2);
-								const nextToneIndex = Math.min(toneIndex + 1, skinTones.length - 1);
-								const factor = ((lum + 1) * (skinTones.length - 1)) / 2 - toneIndex;
+							// Interpolate skin tone based on luminosity
+							const toneIndex = Math.min(
+								Math.floor(lum * (skinTones.length - 1)),
+								skinTones.length - 1
+							);
+							const nextToneIndex = Math.min(toneIndex + 1, skinTones.length - 1);
+							const factor = lum * (skinTones.length - 1) - toneIndex;
 
-								const skinTone = interpolateColor(
-									skinTones[toneIndex],
-									skinTones[nextToneIndex],
-									factor
-								);
+							const skinTone = interpolateColor(
+								skinTones[toneIndex],
+								skinTones[nextToneIndex],
+								factor
+							);
 
-								r = Math.round(r * (1 - lum) + skinTone.r * lum);
-								g = Math.round(g * (1 - lum) + skinTone.g * lum);
-								b = Math.round(b * (1 - lum) + skinTone.b * lum);
-							}
+							r = Math.round(r * (1 - lum) + skinTone.r * lum);
+							g = Math.round(g * (1 - lum) + skinTone.g * lum);
+							b = Math.round(b * (1 - lum) + skinTone.b * lum);
 
 							const pixelIndex = ((y + radius) * size + (x + radius)) * 4;
 							imageData.data[pixelIndex] = r;
@@ -151,15 +150,39 @@
 
 <div class="m-6 flex flex-col items-center">
 	<p class="text-lg font-medium mb-2">{label}</p>
+
+	<!-- Skin Tone Color Bar with Labels -->
+	<div class="w-full mt-4 h-8 flex relative">
+		<div style="width: 5%; background-color: #fff;">
+			<p
+				class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black text-xs"
+			>
+				No Overlay
+			</p>
+		</div>
+		{#each skinTones.slice(1) as tone, i (tone.label)}
+			<div class="flex-1 relative" style="background-color: rgb({tone.r}, {tone.g}, {tone.b})">
+				<p
+					class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xs font-bold"
+				>
+					{tone.label}
+				</p>
+			</div>
+		{/each}
+	</div>
+
+	<!-- Slider -->
 	<input
 		id="luminositySlider"
 		type="range"
-		min="-1"
+		min="0"
 		max="1"
 		step="0.01"
 		bind:value={$luminosity}
 		class="w-full mb-6"
 	/>
+
+	<!-- Canvas for color wheel -->
 	<canvas bind:this={canvas}></canvas>
 </div>
 
@@ -179,4 +202,4 @@
 		justify-content: space-between;
 		width: 100%;
 	}
-</style> -->
+</style>
