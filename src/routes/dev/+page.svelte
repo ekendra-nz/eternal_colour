@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 
@@ -7,6 +7,29 @@
 	let size = 100; // Canvas size
 	let percentOfWindow = 0.7; // Scale relative to window
 	let label = ''; // Display label
+
+	// Fitzpatrick skin tones (RGB values)
+	const skinTones = [
+		{ r: 255, g: 224, b: 189, label: 'No Overlay (Pure Wheel)' }, // No overlay (pure color wheel)
+		{ r: 223, g: 170, b: 129, label: 'Light Skin' }, // Light Skin
+		{ r: 173, g: 115, b: 91, label: 'Medium Light Skin' }, // Medium Light Skin
+		{ r: 139, g: 87, b: 63, label: 'Medium Skin' }, // Medium Skin
+		{ r: 105, g: 63, b: 47, label: 'Tan Skin' }, // Tan Skin
+		{ r: 80, g: 47, b: 34, label: 'Dark Skin' } // Dark Skin
+	];
+
+	// Function to interpolate between two colors
+	function interpolateColor(
+		start: { r: number; g: number; b: number },
+		end: { r: number; g: number; b: number },
+		factor: number
+	): { r: number; g: number; b: number } {
+		return {
+			r: Math.round(start.r + factor * (end.r - start.r)),
+			g: Math.round(start.g + factor * (end.g - start.g)),
+			b: Math.round(start.b + factor * (end.b - start.b))
+		};
+	}
 
 	onMount(() => {
 		const windowHeight = window.innerHeight;
@@ -29,12 +52,8 @@
 				const imageData = ctx.createImageData(size, size);
 
 				// Update label with rounded values
-				label =
-					lum < 0
-						? `${Math.round(Math.abs(lum) * 100)}% Black Influence`
-						: lum > 0
-							? `${Math.round(lum * 100)}% White Influence`
-							: `0% Black or White Influence (Pure Colors)`;
+				const sectionIndex = Math.floor(((lum + 1) * (skinTones.length - 1)) / 2);
+				label = `${skinTones[sectionIndex].label} - ${Math.round((lum + 1) * 100)}% Skin Tone Influence`;
 
 				// Loop through pixels
 				for (let y = -radius; y < radius; y++) {
@@ -52,22 +71,33 @@
 
 							let [r, g, b] = hsvToRgb(hue, saturation, value);
 
-							// Adjust for luminosity
-							if (lum > 0) {
-								r = Math.round(r * (1 - lum) + 255 * lum);
-								g = Math.round(g * (1 - lum) + 255 * lum);
-								b = Math.round(b * (1 - lum) + 255 * lum);
-							} else if (lum < 0) {
-								r = Math.round(r * (1 + lum));
-								g = Math.round(g * (1 + lum));
-								b = Math.round(b * (1 + lum));
+							// If luminosity is in the no-overlay section, use pure color wheel
+							if (lum === -1) {
+								r = Math.round(r);
+								g = Math.round(g);
+								b = Math.round(b);
+							} else {
+								// Interpolate skin tone based on luminosity
+								const toneIndex = Math.floor(((lum + 1) * (skinTones.length - 1)) / 2);
+								const nextToneIndex = Math.min(toneIndex + 1, skinTones.length - 1);
+								const factor = ((lum + 1) * (skinTones.length - 1)) / 2 - toneIndex;
+
+								const skinTone = interpolateColor(
+									skinTones[toneIndex],
+									skinTones[nextToneIndex],
+									factor
+								);
+
+								r = Math.round(r * (1 - lum) + skinTone.r * lum);
+								g = Math.round(g * (1 - lum) + skinTone.g * lum);
+								b = Math.round(b * (1 - lum) + skinTone.b * lum);
 							}
 
 							const pixelIndex = ((y + radius) * size + (x + radius)) * 4;
 							imageData.data[pixelIndex] = r;
 							imageData.data[pixelIndex + 1] = g;
 							imageData.data[pixelIndex + 2] = b;
-							imageData.data[pixelIndex + 3] = 255;
+							imageData.data[pixelIndex + 3] = 255; // Alpha channel
 						}
 					}
 				}
@@ -138,4 +168,15 @@
 		border: 10px solid black;
 		border-radius: 50%;
 	}
-</style>
+	.slider-container {
+		width: 100%;
+		display: flex;
+		justify-content: space-between;
+		padding: 0 20px;
+	}
+	.slider-label {
+		display: flex;
+		justify-content: space-between;
+		width: 100%;
+	}
+</style> -->
