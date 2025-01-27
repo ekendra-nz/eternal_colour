@@ -29,9 +29,9 @@
 		<!-- App Bar -->
 		<AppBar>
 			<svelte:fragment slot="lead">
-				<strong class="text-xl uppercase">Skeleton</strong>
+				<strong class="text-xl uppercase">HSV Colour Wheel</strong>
 			</svelte:fragment>
-			<svelte:fragment slot="trail">
+			<!-- <svelte:fragment slot="trail">
 				<a
 					class="btn btn-sm variant-ghost-surface"
 					href="https://discord.gg/EXqV7W8MtY"
@@ -56,7 +56,7 @@
 				>
 					GitHub
 				</a>
-			</svelte:fragment>
+			</svelte:fragment> -->
 		</AppBar>
 	</svelte:fragment>
 	<!-- Page Route Content -->

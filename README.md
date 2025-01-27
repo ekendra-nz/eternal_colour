@@ -2,10 +2,12 @@
 
 - <https://www.eternaltattooink.com/pages/color-maps>
 - <https://artistpigments.org/visualize_colors>
+- <https://interactjs.io/>
+- <https://svelte-awesome-color-picker.vercel.app/>
 
-# -----------------------------------------------------
+## -----------------------------------------------------
 
-# create-svelte
+## create-svelte
 
 Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
 
