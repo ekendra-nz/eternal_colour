@@ -1,66 +1,85 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { writable } from 'svelte/store';
 
-	// Define the canvas element and its size
 	let canvas: HTMLCanvasElement | null = null;
+	const luminosity = writable(0); // Luminosity (-1 to 1)
+	let size = 100; // Canvas size
+	let percentOfWindow = 0.7; // Scale relative to window
+	let label = ''; // Display label
 
-	let size = 100; // Diameter of the color wheel
-	let percentOfWindow = 0.7;
 	onMount(() => {
 		const windowHeight = window.innerHeight;
 		const windowWidth = window.innerWidth;
 		const height = Math.round(windowHeight * percentOfWindow);
 		const width = Math.round(windowWidth * percentOfWindow);
-		// size = Math.round(Math.min(height, width) / 100) * 100;
 		size = Math.min(height, width);
-		console.log('size', size, 'height', height, 'width', width);
 
-		if (canvas) {
-			canvas.width = size;
-			canvas.height = size;
+		// Update canvas whenever luminosity changes
+		const unsubscribe = luminosity.subscribe((lum) => {
+			if (canvas) {
+				canvas.width = size;
+				canvas.height = size;
 
-			const ctx = canvas.getContext('2d');
-			if (!ctx) return;
+				const ctx = canvas.getContext('2d');
+				if (!ctx) return;
 
-			const radius = size / 2;
-			const imageData = ctx.createImageData(size, size);
+				const radius = size / 2;
+				const extendedRadius = radius + 1; // Slightly extend radius to eliminate white edge
+				const imageData = ctx.createImageData(size, size);
 
-			// Loop through each pixel in the canvas
-			for (let y = -radius; y < radius; y++) {
-				for (let x = -radius; x < radius; x++) {
-					const distance = Math.sqrt(x * x + y * y);
+				// Update label with rounded values
+				label =
+					lum < 0
+						? `${Math.round(Math.abs(lum) * 100)}% Black Influence`
+						: lum > 0
+							? `${Math.round(lum * 100)}% White Influence`
+							: `0% Black or White Influence (Pure Colors)`;
 
-					// Only color pixels within the circle
-					if (distance <= radius) {
-						const angle = Math.atan2(y, x) + Math.PI; // Range: [0, 2π]
-						const hue = (angle / (2 * Math.PI)) * 360; // Convert angle to hue
-						const saturation = distance / radius; // Saturation based on distance
-						const value = 1; // Full value
+				// Loop through pixels
+				for (let y = -radius; y < radius; y++) {
+					for (let x = -radius; x < radius; x++) {
+						const distance = Math.sqrt(x * x + y * y);
 
-						// Convert HSV to RGB
-						const [r, g, b] = hsvToRgb(hue, saturation, value);
+						// Only render within the extended circle
+						if (distance <= extendedRadius) {
+							const angle = Math.atan2(y, x) + Math.PI; // Range: [0, 2π]
+							let hue = (angle / (2 * Math.PI)) * 360;
+							if (hue >= 360) hue = 0;
 
-						const pixelIndex = ((y + radius) * size + (x + radius)) * 4;
-						imageData.data[pixelIndex] = r;
-						imageData.data[pixelIndex + 1] = g;
-						imageData.data[pixelIndex + 2] = b;
-						imageData.data[pixelIndex + 3] = 255; // Alpha channel
+							const saturation = Math.min(1, distance / radius);
+							const value = 1; // Full value
+
+							let [r, g, b] = hsvToRgb(hue, saturation, value);
+
+							// Adjust for luminosity
+							if (lum > 0) {
+								r = Math.round(r * (1 - lum) + 255 * lum);
+								g = Math.round(g * (1 - lum) + 255 * lum);
+								b = Math.round(b * (1 - lum) + 255 * lum);
+							} else if (lum < 0) {
+								r = Math.round(r * (1 + lum));
+								g = Math.round(g * (1 + lum));
+								b = Math.round(b * (1 + lum));
+							}
+
+							const pixelIndex = ((y + radius) * size + (x + radius)) * 4;
+							imageData.data[pixelIndex] = r;
+							imageData.data[pixelIndex + 1] = g;
+							imageData.data[pixelIndex + 2] = b;
+							imageData.data[pixelIndex + 3] = 255;
+						}
 					}
 				}
-			}
 
-			// Render the generated image onto the canvas
-			ctx.putImageData(imageData, 0, 0);
-		}
+				// Render the generated image onto the canvas
+				ctx.putImageData(imageData, 0, 0);
+			}
+		});
+
+		return unsubscribe;
 	});
 
-	/**
-	 * Convert HSV to RGB
-	 * @param h - Hue (0-360 degrees)
-	 * @param s - Saturation (0-1)
-	 * @param v - Value (0-1)
-	 * @returns [red, green, blue] in 0-255 range
-	 */
 	function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
 		const c = v * s;
 		const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
@@ -100,7 +119,17 @@
 	}
 </script>
 
-<div class="m-6 flex justify-center">
+<div class="m-6 flex flex-col items-center">
+	<p class="text-lg font-medium mb-2">{label}</p>
+	<input
+		id="luminositySlider"
+		type="range"
+		min="-1"
+		max="1"
+		step="0.01"
+		bind:value={$luminosity}
+		class="w-full mb-6"
+	/>
 	<canvas bind:this={canvas}></canvas>
 </div>
 
