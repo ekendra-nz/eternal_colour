@@ -5,6 +5,19 @@
 - <https://interactjs.io/>
 - <https://svelte-awesome-color-picker.vercel.app/>
 
+## The Monk Skin Tone Scale (MST)
+
+A = f7ede4
+B = f3e7da
+C = f6ead0
+D = ead9bb
+E = d7bd96
+F = 9f7d54
+G = 815d44
+H = 604234
+I = 3a312a
+J = 2a2420
+
 ## -----------------------------------------------------
 
 ## create-svelte

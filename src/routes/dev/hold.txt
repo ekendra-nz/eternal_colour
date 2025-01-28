@@ -8,74 +8,15 @@
 	let percentOfWindow = 0.7; // Scale relative to window
 	let label = ''; // Display label
 
-	// Convert Hex to HSV
-	function hexToHsv(hex: string): { h: number; s: number; v: number } {
-		let r: number = 0,
-			g: number = 0,
-			b: number = 0;
-
-		// 3 digits
-		if (hex.length === 4) {
-			r = parseInt(hex[1] + hex[1], 16);
-			g = parseInt(hex[2] + hex[2], 16);
-			b = parseInt(hex[3] + hex[3], 16);
-		}
-		// 6 digits
-		if (hex.length === 7) {
-			r = parseInt(hex[1] + hex[2], 16);
-			g = parseInt(hex[3] + hex[4], 16);
-			b = parseInt(hex[5] + hex[6], 16);
-		}
-
-		// Normalize RGB values to the range 0-1
-		r /= 255;
-		g /= 255;
-		b /= 255;
-
-		// Find the maximum and minimum RGB values
-		const max = Math.max(r, g, b);
-		const min = Math.min(r, g, b);
-		const delta = max - min;
-
-		let h = 0;
-		let s = max === 0 ? 0 : delta / max;
-		let v = max;
-
-		if (delta !== 0) {
-			if (max === r) {
-				h = (g - b) / delta;
-			} else if (max === g) {
-				h = 2 + (b - r) / delta;
-			} else {
-				h = 4 + (r - g) / delta;
-			}
-			h *= 60;
-			if (h < 0) h += 360;
-		}
-
-		return { h, s, v };
-	}
-
-	// Monk skin tones (with #f7ede4 for Type A)
+	// Fitzpatrick skin tones (HSV ranges and proportions)
 	const skinTonesHSV = [
-		{ h: [40, 50], s: [0, 0.1], v: [0, 10.97], label: 'Type A', range: 0.1 },
-		{ h: [10, 20], s: [0.2, 0.3], v: [0.9, 1.0], label: 'Type B', range: 0.1 },
-		{ h: [15, 25], s: [0.3, 0.4], v: [0.85, 0.95], label: 'Type C', range: 0.1 },
-		{ h: [20, 30], s: [0.4, 0.5], v: [0.75, 0.85], label: 'Type D', range: 0.1 },
-		{ h: [25, 35], s: [0.5, 0.6], v: [0.65, 0.75], label: 'Type E', range: 0.1 },
-		{ h: [30, 40], s: [0.6, 0.7], v: [0.55, 0.65], label: 'Type F', range: 0.1 },
-		{ h: [35, 45], s: [0.7, 0.8], v: [0.45, 0.55], label: 'Type G', range: 0.1 },
-		{ h: [40, 50], s: [0.8, 0.9], v: [0.35, 0.45], label: 'Type H', range: 0.1 },
-		{ h: [45, 55], s: [0.9, 1.0], v: [0.25, 0.35], label: 'Type I', range: 0.1 },
-		// Explicitly set Type J to have the desired RGB
-		{
-			h: [50, 60],
-			s: [0.9, 1.0],
-			v: [0.15, 0.25],
-			label: 'Type J',
-			range: 0.1,
-			customRgb: [42, 36, 32]
-		}
+		{ h: [0, 0], s: [0, 0], v: [0, 0], label: 'No Overlay', range: 0.05 },
+		{ h: [20, 30], s: [0.2, 0.4], v: [0.9, 1.0], label: 'Fitzpatrick I', range: 0.15 },
+		{ h: [20, 30], s: [0.3, 0.5], v: [0.8, 0.9], label: 'Fitzpatrick II', range: 0.2 },
+		{ h: [20, 40], s: [0.4, 0.6], v: [0.7, 0.8], label: 'Fitzpatrick III', range: 0.2 },
+		{ h: [25, 40], s: [0.5, 0.7], v: [0.6, 0.7], label: 'Fitzpatrick IV', range: 0.15 },
+		{ h: [30, 45], s: [0.6, 0.8], v: [0.4, 0.6], label: 'Fitzpatrick V', range: 0.15 },
+		{ h: [35, 50], s: [0.7, 0.9], v: [0.2, 0.4], label: 'Fitzpatrick VI', range: 0.1 }
 	];
 
 	// Interpolate between two values
@@ -171,28 +112,12 @@
 				const rangeStart = cumulativeRange - skinTonesHSV[toneIndex].range;
 				const factor = (lum - rangeStart) / skinTonesHSV[toneIndex].range;
 
-				// Fix: when luminosity is all the way to the right (1.0)
-				if (lum === 1) {
-					toneIndex = skinTonesHSV.length - 1;
-				}
-
-				// Explicit check for Type J
-				let skinToneHSV;
-				let r = 0,
-					g = 0,
-					b = 0; // Declare r, g, b for Type J RGB handling
-				if (skinTonesHSV[toneIndex].customRgb) {
-					// Use custom RGB for Type J
-					skinToneHSV = { h: 0, s: 0, v: 0 };
-					[r, g, b] = skinTonesHSV[toneIndex].customRgb; // Assign custom RGB
-				} else {
-					skinToneHSV = interpolateHSV(
-						skinTonesHSV[toneIndex],
-						skinTonesHSV[Math.min(toneIndex + 1, skinTonesHSV.length - 1)],
-						factor
-					);
-					[r, g, b] = hsvToRgb(skinToneHSV.h, skinToneHSV.s, skinToneHSV.v); // Use interpolation result
-				}
+				const skinToneHSV = interpolateHSV(
+					skinTonesHSV[toneIndex],
+					skinTonesHSV[Math.min(toneIndex + 1, skinTonesHSV.length - 1)],
+					factor
+				);
+				const [r, g, b] = hsvToRgb(skinToneHSV.h, skinToneHSV.s, skinToneHSV.v);
 
 				// Update label
 				if (lum <= 0.05) {
@@ -243,18 +168,23 @@
 	<div class="slider-container">
 		<div class="gradient-bar">
 			<div class="gradient"></div>
+			<div class="divisions">
+				<div class="division" style="left: 5%;"></div>
+				<div class="division" style="left: 20%;"></div>
+				<div class="division" style="left: 40%;"></div>
+				<div class="division" style="left: 60%;"></div>
+				<div class="division" style="left: 75%;"></div>
+				<div class="division" style="left: 100%;"></div>
+			</div>
 		</div>
 		<div class="labels">
-			<span>Type A</span>
-			<span>Type B</span>
-			<span>Type C</span>
-			<span>Type D</span>
-			<span>Type E</span>
-			<span>Type F</span>
-			<span>Type G</span>
-			<span>Type H</span>
-			<span>Type I</span>
-			<span>Type J</span>
+			<span>No Overlay</span>
+			<span>Fitz I</span>
+			<span>Fitz II</span>
+			<span>Fitz III</span>
+			<span>Fitz IV</span>
+			<span>Fitz V</span>
+			<span>Fitz VI</span>
 		</div>
 		<input class="slider" type="range" min="0" max="1" step="0.01" bind:value={$luminosity} />
 	</div>
@@ -296,17 +226,29 @@
 		height: 100%;
 		background: linear-gradient(
 			to right,
-			#f7ede4 0%,
-			#f3e7da 10%,
-			#f6ead0 20%,
-			#ead9bb 30%,
-			#d7bd96 40%,
-			#9f7d54 50%,
-			#815d44 60%,
-			#604234 70%,
-			#3a312a 80%,
-			#2a2420 90%
+			transparent 0%,
+			hsl(20, 20%, 95%) 5%,
+			hsl(20, 35%, 85%) 20%,
+			hsl(25, 50%, 70%) 40%,
+			hsl(30, 60%, 55%) 60%,
+			hsl(40, 70%, 45%) 75%,
+			hsl(50, 80%, 35%) 100%
 		);
+	}
+
+	.divisions {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.division {
+		position: relative;
+		width: 1px;
+		height: 100%;
+		background-color: black;
 	}
 
 	.labels {
@@ -315,7 +257,7 @@
 		margin-top: 5px;
 		font-size: 0.9em;
 		font-weight: bold;
-		color: #f6e2b1;
+		color: #333;
 	}
 
 	.slider {
